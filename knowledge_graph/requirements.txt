@@ -1,0 +1,4 @@
+neo4j>=5.26.0
+pydantic>=2.10.0
+structlog>=24.4.0
+httpx>=0.28.0

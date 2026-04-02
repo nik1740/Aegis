@@ -1,0 +1,223 @@
+# Aegis — Docker Compose Deployment Manifest
+version: "3.9"
+
+services:
+  # ============================================================
+  # Application Services
+  # ============================================================
+
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: aegis-gateway
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql://aegis:aegis_secret@postgres:5432/aegis
+      - REDIS_URL=redis://redis:6379/0
+      - AGENT_SERVER_URL=http://agent-server:8100
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-aegis_graph}
+    volumes:
+      - upload_storage:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - aegis-net
+
+  agent-server:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    container_name: aegis-agents
+    ports:
+      - "8100:8100"
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql://aegis:aegis_secret@postgres:5432/aegis
+      - REDIS_URL=redis://redis:6379/0
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-aegis_graph}
+      - CHROMADB_HOST=chromadb
+      - CHROMADB_PORT=8200
+      - LANGSMITH_TRACING=true
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      chromadb:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - aegis-net
+
+  celery-worker:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    container_name: aegis-celery
+    command: celery -A tasks worker --loglevel=info --concurrency=4
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql://aegis:aegis_secret@postgres:5432/aegis
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - aegis-net
+
+  celery-beat:
+    build:
+      context: ./agents
+      dockerfile: Dockerfile
+    container_name: aegis-celery-beat
+    command: celery -A tasks beat --loglevel=info
+    env_file: .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - aegis-net
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: aegis-dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      - GATEWAY_URL=http://gateway:8000
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-aegis_graph}
+    depends_on:
+      - gateway
+    restart: unless-stopped
+    networks:
+      - aegis-net
+
+  # ============================================================
+  # Data Stores
+  # ============================================================
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: aegis-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=aegis
+      - POSTGRES_USER=aegis
+      - POSTGRES_PASSWORD=aegis_secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/01_init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aegis"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - aegis-net
+
+  neo4j:
+    image: neo4j:5-community
+    container_name: aegis-neo4j
+    ports:
+      - "7474:7474"   # HTTP browser
+      - "7687:7687"   # Bolt protocol
+    environment:
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-aegis_graph}
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_server_memory_heap_initial__size=256m
+      - NEO4J_server_memory_heap_max__size=512m
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD", "neo4j", "status"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - aegis-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: aegis-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - aegis-net
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: aegis-chromadb
+    ports:
+      - "8200:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - ANONYMIZED_TELEMETRY=false
+    restart: unless-stopped
+    networks:
+      - aegis-net
+
+# ============================================================
+# Volumes & Networks
+# ============================================================
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  neo4j_logs:
+  redis_data:
+  chroma_data:
+  upload_storage:
+
+networks:
+  aegis-net:
+    driver: bridge

@@ -1,0 +1,120 @@
+{
+  "company_name": "Cymonic Technologies",
+  "policy_version": "2026.1",
+  "roles": [
+    {"id": "ROLE-001", "title": "Junior Analyst", "tier": 1, "seniority_level": "junior"},
+    {"id": "ROLE-002", "title": "Senior Analyst", "tier": 2, "seniority_level": "senior"},
+    {"id": "ROLE-003", "title": "Manager", "tier": 3, "seniority_level": "manager"},
+    {"id": "ROLE-004", "title": "Director", "tier": 4, "seniority_level": "director"},
+    {"id": "ROLE-005", "title": "VP", "tier": 5, "seniority_level": "executive"}
+  ],
+  "departments": [
+    {"id": "DEPT-001", "name": "Engineering", "cost_center": "CC-ENG", "budget": 500000},
+    {"id": "DEPT-002", "name": "Sales", "cost_center": "CC-SALES", "budget": 750000},
+    {"id": "DEPT-003", "name": "Marketing", "cost_center": "CC-MKT", "budget": 300000},
+    {"id": "DEPT-004", "name": "Finance", "cost_center": "CC-FIN", "budget": 200000},
+    {"id": "DEPT-005", "name": "Human Resources", "cost_center": "CC-HR", "budget": 150000}
+  ],
+  "locations": [
+    {"id": "LOC-001", "city": "London", "country": "GB", "region": "EMEA", "cost_index": 1.35},
+    {"id": "LOC-002", "city": "New York", "country": "US", "region": "NA", "cost_index": 1.50},
+    {"id": "LOC-003", "city": "Berlin", "country": "DE", "region": "EMEA", "cost_index": 1.10},
+    {"id": "LOC-004", "city": "Singapore", "country": "SG", "region": "APAC", "cost_index": 1.25},
+    {"id": "LOC-005", "city": "Mumbai", "country": "IN", "region": "APAC", "cost_index": 0.65}
+  ],
+  "categories": [
+    {"name": "meals", "requires_receipt": true, "requires_preapproval": false},
+    {"name": "transport", "requires_receipt": true, "requires_preapproval": false},
+    {"name": "accommodation", "requires_receipt": true, "requires_preapproval": true},
+    {"name": "office_supplies", "requires_receipt": true, "requires_preapproval": false},
+    {"name": "client_entertainment", "requires_receipt": true, "requires_preapproval": true},
+    {"name": "conference", "requires_receipt": true, "requires_preapproval": true}
+  ],
+  "rules": [
+    {
+      "rule_id": "MEAL-UK-001",
+      "description": "Daily meal allowance for Junior Analysts in UK",
+      "category": "meals",
+      "limit_amount": 35.00,
+      "limit_currency": "GBP",
+      "limit_period": "daily",
+      "applicable_roles": ["ROLE-001"],
+      "applicable_locations": ["LOC-001"],
+      "effective_date": "2026-01-01",
+      "exemptions": [
+        {"reason": "client_meeting", "condition": "CRM-validated client meeting"}
+      ]
+    },
+    {
+      "rule_id": "MEAL-UK-002",
+      "description": "Daily meal allowance for Senior Analysts in UK",
+      "category": "meals",
+      "limit_amount": 45.00,
+      "limit_currency": "GBP",
+      "limit_period": "daily",
+      "applicable_roles": ["ROLE-002"],
+      "applicable_locations": ["LOC-001"],
+      "effective_date": "2026-01-01",
+      "exemptions": [
+        {"reason": "client_meeting", "condition": "CRM-validated client meeting"}
+      ]
+    },
+    {
+      "rule_id": "MEAL-UK-003",
+      "description": "Daily meal allowance for Managers in UK",
+      "category": "meals",
+      "limit_amount": 60.00,
+      "limit_currency": "GBP",
+      "limit_period": "daily",
+      "applicable_roles": ["ROLE-003"],
+      "applicable_locations": ["LOC-001"],
+      "effective_date": "2026-01-01",
+      "exemptions": []
+    },
+    {
+      "rule_id": "TRANSPORT-GLOBAL-001",
+      "description": "Per-trip transport limit for all roles",
+      "category": "transport",
+      "limit_amount": 100.00,
+      "limit_currency": "GBP",
+      "limit_period": "per_trip",
+      "applicable_roles": ["ROLE-001", "ROLE-002", "ROLE-003"],
+      "applicable_locations": ["LOC-001", "LOC-002", "LOC-003", "LOC-004", "LOC-005"],
+      "effective_date": "2026-01-01",
+      "exemptions": []
+    },
+    {
+      "rule_id": "ACCOM-UK-001",
+      "description": "Nightly accommodation limit in London",
+      "category": "accommodation",
+      "limit_amount": 200.00,
+      "limit_currency": "GBP",
+      "limit_period": "daily",
+      "applicable_roles": ["ROLE-001", "ROLE-002", "ROLE-003"],
+      "applicable_locations": ["LOC-001"],
+      "effective_date": "2026-01-01",
+      "exemptions": []
+    },
+    {
+      "rule_id": "CLIENT-ENT-001",
+      "description": "Client entertainment per-event limit",
+      "category": "client_entertainment",
+      "limit_amount": 150.00,
+      "limit_currency": "GBP",
+      "limit_period": "per_item",
+      "applicable_roles": ["ROLE-002", "ROLE-003", "ROLE-004"],
+      "applicable_locations": ["LOC-001", "LOC-002"],
+      "effective_date": "2026-01-01",
+      "exemptions": [
+        {"reason": "executive_approval", "condition": "Pre-approved by VP or above"}
+      ]
+    }
+  ],
+  "employees": [
+    {"id": "E-1042", "name": "Alice Johnson", "email": "alice.j@cymonic.com", "role_id": "ROLE-002", "dept_id": "DEPT-002", "loc_id": "LOC-001"},
+    {"id": "E-1043", "name": "Bob Smith", "email": "bob.s@cymonic.com", "role_id": "ROLE-001", "dept_id": "DEPT-001", "loc_id": "LOC-001"},
+    {"id": "E-1044", "name": "Carol Davis", "email": "carol.d@cymonic.com", "role_id": "ROLE-003", "dept_id": "DEPT-002", "loc_id": "LOC-002"},
+    {"id": "E-1045", "name": "David Wilson", "email": "david.w@cymonic.com", "role_id": "ROLE-001", "dept_id": "DEPT-003", "loc_id": "LOC-003"},
+    {"id": "E-1046", "name": "Eva Martinez", "email": "eva.m@cymonic.com", "role_id": "ROLE-004", "dept_id": "DEPT-001", "loc_id": "LOC-004"}
+  ]
+}
